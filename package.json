@@ -33,14 +33,15 @@
     "build:dev": "node scripts/build.mjs --dev",
     "watch": "node scripts/build.mjs --watch",
     "release": "node scripts/build.mjs --release",
-    "lint": "eslint src scripts --ext .js,.mjs",
-    "lint:fix": "eslint src scripts --ext .js,.mjs --fix",
+    "lint": "eslint src scripts",
+    "lint:fix": "eslint src scripts --fix",
     "check": "node --check src/index.js",
-    "clean": "node scripts/clean.mjs"
+    "clean": "node scripts/clean.mjs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "version": "npm run sync-version && git add addon/manifest.json"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
-    "javascript-obfuscator": "^4.1.0"
+    "eslint": "^9.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

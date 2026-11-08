@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.0.0). Leave empty to use package.json'
+        required: false
 
 permissions:
   contents: write
@@ -23,7 +28,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci --omit=optional || npm install --omit=optional
 
       - name: Lint
         run: npm run lint
@@ -39,11 +44,24 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "xpi=dist/smartimport-$VERSION.xpi" >> "$GITHUB_OUTPUT"
 
-      - name: Generate update manifest
+      - name: Verify artifact
+        run: |
+          XPI="${{ steps.version.outputs.xpi }}"
+          if [ ! -f "$XPI" ]; then
+            echo "::error::Build artifact not found: $XPI"
+            exit 1
+          fi
+          ls -lh "$XPI"
+
+      - name: Generate update.json
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           XPI="${{ steps.version.outputs.xpi }}"
           SHA=$(sha256sum "$XPI" | cut -d' ' -f1)
+
+          # 注意：update_link 指向固定 tag "release"，这样 manifest 里的
+          # update_url（.../download/release/update.json）永远有效。
+          # 每个版本的 xpi 文件名带版本号，不会互相覆盖。
           cat > dist/update.json <<EOF
           {
             "addons": {
@@ -51,7 +69,7 @@ jobs:
                 "updates": [
                   {
                     "version": "$VERSION",
-                    "update_link": "https://github.com/MrBear9/zotero-smart-import/releases/download/v$VERSION/smartimport-$VERSION.xpi",
+                    "update_link": "https://github.com/MrBear9/zotero-smart-import/releases/download/release/smartimport-$VERSION.xpi",
                     "update_hash": "sha256:$SHA",
                     "applications": {
                       "zotero": {
@@ -65,24 +83,38 @@ jobs:
             }
           }
           EOF
+          echo "--- update.json ---"
           cat dist/update.json
 
-      - name: Create Release
+      - name: Move release tag
+        run: |
+          # 把固定的 "release" tag 移到当前提交，
+          # 这样 .../releases/download/release/ 下的文件始终是最新的。
+          git tag -f release
+          git push -f origin release
+
+      - name: Create or update Release
         uses: softprops/action-gh-release@v2
         with:
-          name: v${{ steps.version.outputs.version }}
+          tag_name: release
+          name: Latest Release
           body: |
+            **版本 ${{ steps.version.outputs.version }}**
+
             见 [CHANGELOG.md](https://github.com/MrBear9/zotero-smart-import/blob/main/CHANGELOG.md)。
 
             ## 安装
 
-            1. 下载下面的 `.xpi` 文件
+            1. 下载 `smartimport-${{ steps.version.outputs.version }}.xpi`
             2. Zotero → 工具 → 插件 → 齿轮 → 从文件安装
             3. 重启 Zotero
+
+            > 也支持在 Zotero 里自动更新（已配置 `update_url`）。
           files: |
             ${{ steps.version.outputs.xpi }}
             dist/update.json
           draft: false
           prerelease: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
