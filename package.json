@@ -1,6 +1,6 @@
 {
   "name": "zotero-smart-import",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zotero plugin: reuse existing collections and merge duplicate items on import.",
   "type": "module",
   "private": true,
