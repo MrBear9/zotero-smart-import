@@ -1,0 +1,36 @@
+# 构建产物
+build/
+dist/
+*.xpi
+*.zip
+
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 日志
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 环境
+.env
+.env.local
+.env.*.local
+
+# 测试
+coverage/
+.nyc_output/
+
+# 临时
+.tmp/
+temp/

@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --omit=optional
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "xpi=dist/smartimport-$VERSION.xpi" >> "$GITHUB_OUTPUT"
+
+      - name: Generate update manifest
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          XPI="${{ steps.version.outputs.xpi }}"
+          SHA=$(sha256sum "$XPI" | cut -d' ' -f1)
+          cat > dist/update.json <<EOF
+          {
+            "addons": {
+              "smart-import@mrbear.dev": {
+                "updates": [
+                  {
+                    "version": "$VERSION",
+                    "update_link": "https://github.com/MrBear9/zotero-smart-import/releases/download/v$VERSION/smartimport-$VERSION.xpi",
+                    "update_hash": "sha256:$SHA",
+                    "applications": {
+                      "zotero": {
+                        "strict_min_version": "7.0",
+                        "strict_max_version": "10.9.9"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+          EOF
+          cat dist/update.json
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            见 [CHANGELOG.md](https://github.com/MrBear9/zotero-smart-import/blob/main/CHANGELOG.md)。
+
+            ## 安装
+
+            1. 下载下面的 `.xpi` 文件
+            2. Zotero → 工具 → 插件 → 齿轮 → 从文件安装
+            3. 重启 Zotero
+          files: |
+            ${{ steps.version.outputs.xpi }}
+            dist/update.json
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

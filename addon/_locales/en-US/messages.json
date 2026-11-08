@@ -1,0 +1,10 @@
+{
+  "addonName": {
+    "message": "Zotero Smart Import",
+    "description": "Add-on name"
+  },
+  "addonDescription": {
+    "message": "Reuse existing collections and merge duplicate items when importing RIS files.",
+    "description": "Add-on description"
+  }
+}

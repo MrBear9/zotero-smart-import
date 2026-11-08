@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "__MSG_addonName__",
+  "version": "1.0.0",
+  "description": "__MSG_addonDescription__",
+  "author": "MrBear9",
+  "homepage_url": "https://github.com/MrBear9/zotero-smart-import",
+  "icons": {
+    "48": "content/icons/favicon.png",
+    "96": "content/icons/favicon.png"
+  },
+  "applications": {
+    "zotero": {
+      "id": "smart-import@mrbear.dev",
+      "update_url": "https://github.com/MrBear9/zotero-smart-import/releases/download/release/update.json",
+      "strict_min_version": "7.0",
+      "strict_max_version": "10.9.9"
+    }
+  }
+}
