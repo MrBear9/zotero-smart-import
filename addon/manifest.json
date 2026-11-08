@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "__MSG_addonName__",
+  "name": "Zotero Smart Import",
   "version": "1.0.1",
-  "description": "__MSG_addonDescription__",
+  "description": "导入 RIS 时复用已有分类，并把重复文献合并。",
   "author": "MrBear9",
   "homepage_url": "https://github.com/MrBear9/zotero-smart-import",
   "icons": {
