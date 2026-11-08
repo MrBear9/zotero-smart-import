@@ -15,8 +15,8 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, rmSync, existsSync } from 'node:fs';
 import { join, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { zipDirectory } from './zip.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -259,6 +259,16 @@ function bundle(entryFile) {
 // ---------------------------------------------------------------- 主流程
 
 function build() {
+  try {
+    doBuild();
+  } catch (e) {
+    console.error('\n构建失败:', e.message);
+    console.error(e.stack);
+    process.exit(1);
+  }
+}
+
+function doBuild() {
   console.log(`\n构建 ${cfg.addonName} v${pkg.version}\n`);
 
   // 1. 清理
@@ -290,29 +300,16 @@ function build() {
   if (existsSync(xpiPath)) rmSync(xpiPath);
 
   log('打包 xpi...');
-  try {
-    // 优先用系统 zip（保留正斜杠路径）
-    execSync(
-      `powershell -NoProfile -Command "Compress-Archive -Path '${BUILD}\\*' -DestinationPath '${xpiPath.replace(/\.xpi$/, '.zip')}' -Force"`,
-      { stdio: 'pipe' }
-    );
-    const zipPath = xpiPath.replace(/\.xpi$/, '.zip');
-    if (existsSync(zipPath)) {
-      // 重命名为 xpi
-      execSync(`powershell -NoProfile -Command "Move-Item '${zipPath}' '${xpiPath}' -Force"`, {
-        stdio: 'pipe',
-      });
-    }
-  } catch (e) {
-    console.error('  打包失败:', e.message);
+  // 用内置 zip 实现，跨平台（不依赖 Windows 的 Compress-Archive 或 Linux 的 zip 命令）
+  const size = zipDirectory(BUILD, xpiPath);
+
+  if (!existsSync(xpiPath) || size === 0) {
+    throw new Error('打包失败：xpi 未生成');
   }
 
-  if (existsSync(xpiPath)) {
-    const size = statSync(xpiPath).size;
-    log(`✓ ${xpiName}  ${(size / 1024).toFixed(1)} KB`);
-    const hash = createHash('sha256').update(readFileSync(xpiPath)).digest('hex');
-    log(`  sha256: ${hash.slice(0, 16)}...`);
-  }
+  log(`✓ ${xpiName}  ${(size / 1024).toFixed(1)} KB`);
+  const hash = createHash('sha256').update(readFileSync(xpiPath)).digest('hex');
+  log(`  sha256: ${hash.slice(0, 16)}...`);
 
   console.log('\n完成\n');
 }

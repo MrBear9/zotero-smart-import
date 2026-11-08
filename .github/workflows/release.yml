@@ -35,13 +35,14 @@ jobs:
       - name: Generate update.json
         run: node scripts/gen-update.mjs
 
-      - name: List build outputs
+      - name: Show outputs
         run: ls -lh dist/
 
       - name: Move release tag
+        continue-on-error: true
         run: |
           git tag -f release
-          git push -f origin release || echo "tag move skipped (no permission)"
+          git push -f origin release
 
       - name: Create or update Release
         uses: softprops/action-gh-release@v2
@@ -58,15 +59,11 @@ jobs:
             3. 重启 Zotero
 
             > 已配置 `update_url`，之后可在 Zotero 里自动更新。
-          files: dist/*.xpi
+          files: |
+            dist/*.xpi
+            dist/update.json
           draft: false
           prerelease: false
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Attach update.json
-        run: |
-          gh release upload release dist/update.json --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
