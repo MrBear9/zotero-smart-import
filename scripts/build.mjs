@@ -29,7 +29,6 @@ const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
 const cfg = pkg.config;
 
 const args = new Set(process.argv.slice(2));
-const DEV = args.has('--dev');
 const WATCH = args.has('--watch');
 
 // ---------------------------------------------------------------- 工具
@@ -44,17 +43,6 @@ function ensureDir(dir) {
 
 function rmrf(dir) {
   if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
-}
-
-/** 递归列出文件（相对 SRC 的路径） */
-function walkSrc(dir = SRC, out = []) {
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    const st = statSync(full);
-    if (st.isDirectory()) walkSrc(full, out);
-    else if (name.endsWith('.js') || name.endsWith('.mjs')) out.push(full);
-  }
-  return out;
 }
 
 // ---------------------------------------------------------------- 极简模块打包
@@ -131,13 +119,13 @@ function stripExports(code) {
   // export default function/class/const
   code = code.replace(
     /^export\s+default\s+(function\s*(\w*)|class\s*(\w*))/gm,
-    (m, decl, fnName, clsName) => {
+    (_match, decl, fnName, clsName) => {
       const name = fnName || clsName || 'defaultExport';
       exportsMap.set('default', name);
       return decl;
     }
   );
-  code = code.replace(/^export\s+default\s+/gm, (m) => {
+  code = code.replace(/^export\s+default\s+/gm, (_match) => {
     exportsMap.set('default', '__default_export__');
     return 'const __default_export__ = ';
   });
